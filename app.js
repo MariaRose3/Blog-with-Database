@@ -16,7 +16,12 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
-mongoose.connect("mongodb://localhost:27017/blogDB", {useNewUrlParser: true});
+mongoose.connect("mongodb://localhost:27017/blogDB", {useNewUrlParser: true, useUnifiedTopology: true}).then(() => {
+  console.log("MongoDB connected successfully");
+})
+.catch((err) => {
+  console.error("MongoDB connection error:", err);
+});
 
 const postSchema = {
   title: String,
@@ -28,10 +33,18 @@ const Post = mongoose.model("Post", postSchema);
 app.get("/", function(req, res){
 
   Post.find({}, function(err, posts){
-    res.render("home", {
-      startingContent: homeStartingContent,
-      posts: posts
+    if (!err){
+      res.render("home", {
+        startingContent: homeStartingContent,
+        posts: posts
       });
+    } else{
+      console.error("Error fetching posts:", err);
+      res.render("home", {
+        startingContent: homeStartingContent,
+        posts: []
+      });
+    }
   });
 });
 
@@ -47,7 +60,9 @@ app.post("/compose", function(req, res){
 
 
   post.save(function(err){
-    if (!err){
+    if (err){
+      console.log("Error saving post:", err);
+    } else{
         res.redirect("/");
     }
   });
